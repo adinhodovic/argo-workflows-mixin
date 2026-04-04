@@ -1,0 +1,97 @@
+# yamllint disable rule:line-length
+---
+rule_files:
+  - ../prometheus_alerts.yaml
+
+tests:
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_total_count{job="argo-workflows", namespace="default", phase="Failed"}'
+        values: "1+100x10"
+      - series: 'argo_workflows_total_count{job="argo-workflows", namespace="default", phase="Succeeded"}'
+        values: "1+100x10"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ArgoWorkflowsHighWorkflowFailureRate
+        exp_alerts:
+          - exp_labels:
+              namespace: default
+              severity: critical
+            exp_annotations:
+              summary: "Argo Workflows high workflow failure rate."
+              description: "More than 10% of workflows are failing or erroring in default the past 5m."
+              dashboard_url: "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview?var-namespace=default"
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_gauge{job="argo-workflows", namespace="default", phase="Pending"}'
+        values: "6+0x20"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ArgoWorkflowsPendingWorkflows
+        exp_alerts:
+          - exp_labels:
+              namespace: default
+              severity: warning
+            exp_annotations:
+              summary: "Argo Workflows has many pending workflows."
+              description: "More than 5 workflows are pending in default for the past 15m."
+              dashboard_url: "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview?var-namespace=default"
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_is_leader{job="argo-workflows", namespace="argo"}'
+        values: "0+0x10"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ArgoWorkflowsControllerNotLeader
+        exp_alerts:
+          - exp_labels:
+              severity: critical
+            exp_annotations:
+              summary: "Argo Workflows controller has no leader."
+              description: "No Argo Workflows controller is the leader for the past 5m. Workflows will not be processed."
+              dashboard_url: "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview"
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_error_count{job="argo-workflows", namespace="argo", cause="OperationPanic"}'
+        values: "1+3100x10"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ArgoWorkflowsControllerHighErrorRate
+        exp_alerts:
+          - exp_labels:
+              cause: OperationPanic
+              severity: warning
+            exp_annotations:
+              summary: "Argo Workflows controller has a high error rate."
+              description: "More than 5 errors per second with cause OperationPanic the past 5m."
+              dashboard_url: "https://grafana.com/d/argo-workflows-controller-skj2/argo-workflows-controller"
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_queue_depth_gauge{job="argo-workflows", namespace="argo", queue_name="workflow_queue"}'
+        values: "101+0x10"
+    alert_rule_test:
+      - eval_time: 10m
+        alertname: ArgoWorkflowsQueueDepthHigh
+        exp_alerts:
+          - exp_labels:
+              queue_name: workflow_queue
+              severity: warning
+            exp_annotations:
+              summary: "Argo Workflows controller queue depth is high."
+              description: "Queue workflow_queue has a depth of more than 100 for the past 5m."
+              dashboard_url: "https://grafana.com/d/argo-workflows-controller-skj2/argo-workflows-controller"
+  - interval: 1m
+    input_series:
+      - series: 'argo_workflows_pods_gauge{job="argo-workflows", namespace="default", phase="Pending"}'
+        values: "11+0x20"
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: ArgoWorkflowsPodPendingHigh
+        exp_alerts:
+          - exp_labels:
+              namespace: default
+              severity: warning
+            exp_annotations:
+              summary: "Argo Workflows has many pending pods."
+              description: "More than 10 workflow pods are pending in default for the past 15m."
+              dashboard_url: "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview?var-namespace=default"
