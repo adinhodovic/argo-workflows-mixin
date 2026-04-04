@@ -30,7 +30,7 @@
 
       workflowFailureRate: {
         enabled: true,
-        severity: 'critical',
+        severity: 'warning',
         interval: '5m',
         threshold: '10',  // percent
       },

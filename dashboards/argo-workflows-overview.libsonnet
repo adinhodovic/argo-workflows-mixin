@@ -459,7 +459,7 @@ local tbOverride = tbStandardOptions.override;
             'percent',
             queries.workflowSuccessRate6h,
             instant=true,
-            description='Percentage of completed workflows succeeding over the past 6 hours. This gives a recent high-level health signal without being too noisy.',
+            description='Percentage of completed workflows succeeding over the past 6 hours. No data means no completed workflows in that window.',
           ),
 
         runningPodsStat:
@@ -692,7 +692,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'Success Rate',
               },
             ],
-            description='An overview table showing workflow counts by namespace over the past 6 hours.',
+            description='Workflow completions by workflow namespace over the past 6 hours, including succeeded, failed, error, and derived success rate.',
             sortBy={ name: 'Total Workflows', desc: true },
             transformations=[
               tbQueryOptions.transformation.withId(

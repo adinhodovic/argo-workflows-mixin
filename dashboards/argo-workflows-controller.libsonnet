@@ -274,7 +274,7 @@ local grid = g.util.grid;
             'K8s API Success Rate',
             'percent',
             queries.k8sRequestSuccessRate,
-            description='Current percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.',
+            description='Current percentage of Kubernetes API requests succeeding. No data means there were no requests in the selected interval.',
           ),
 
         totalQueueDepthStat:
@@ -300,7 +300,7 @@ local grid = g.util.grid;
             'ops',
             queries.errorCountByCause,
             '{{ cause }}',
-            description='Rate of controller errors by cause. Common causes include OperationPanic, CronWorkflowSubmissionError, and CronWorkflowSpecError. Persistent errors indicate controller-level issues requiring investigation.',
+            description='Controller errors per second by cause. Common causes include OperationPanic, CronWorkflowSubmissionError, and CronWorkflowSpecError.',
             stack='normal',
           ),
 
@@ -388,7 +388,7 @@ local grid = g.util.grid;
             'ops',
             queries.queueAdds,
             '{{ queue_name }}',
-            description='Rate of items being added to controller work queues. Spikes indicate bursts of workflow activity or reconciliation events.',
+            description='Items added per second to controller work queues. Spikes indicate bursts of workflow activity or reconciliation events.',
             stack='normal',
           ),
 
@@ -432,7 +432,7 @@ local grid = g.util.grid;
             'ops',
             queries.queueRetries,
             '{{ queue_name }}',
-            description='Rate of queue message retries. Frequent retries indicate transient failures in workflow processing. Persistent high rates suggest systemic issues.',
+            description='Queue retries per second. Frequent retries indicate transient failures in workflow processing or reconciliation.',
             stack='normal',
           ),
 
@@ -550,7 +550,7 @@ local grid = g.util.grid;
       dashboard.new(
         'Argo Workflows / Controller',
       ) +
-      dashboard.withDescription('Detailed controller monitoring for Argo Workflows. Tracks controller errors, Kubernetes API request patterns, work queue metrics (depth, latency, duration, retries), worker saturation, rate limiter behavior, CronWorkflow triggers, and deprecated feature usage. Use this dashboard to diagnose controller performance issues, identify API server pressure, and monitor processing backlogs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('argo-workflows-mixin', 'https://github.com/adinhodovic/argo-workflows-mixin')) +
+      dashboard.withDescription('Detailed controller monitoring for Argo Workflows. Tracks controller errors, Kubernetes API request patterns, work queue metrics, and worker saturation. Use this dashboard to diagnose controller performance issues, identify API server pressure, and monitor processing backlogs. %s' % mixinUtils.dashboards.dashboardDescriptionLink('argo-workflows-mixin', 'https://github.com/adinhodovic/argo-workflows-mixin')) +
       dashboard.withUid($._config.dashboardIds[dashboardName]) +
       dashboard.withTags($._config.tags) +
       dashboard.withTimezone('utc') +

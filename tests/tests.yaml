@@ -16,7 +16,7 @@ tests:
         exp_alerts:
           - exp_labels:
               namespace: default
-              severity: critical
+              severity: warning
             exp_annotations:
               summary: "Argo Workflows high workflow failure rate."
               description: "More than 10% of workflows are failing or erroring in default the past 5m."

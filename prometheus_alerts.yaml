@@ -28,7 +28,7 @@
       ) > 10
     "for": "1m"
     "labels":
-      "severity": "critical"
+      "severity": "warning"
   - "alert": "ArgoWorkflowsPendingWorkflows"
     "annotations":
       "dashboard_url": "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview?var-namespace={{ $labels.namespace }}"

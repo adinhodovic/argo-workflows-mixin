@@ -4,7 +4,7 @@
    "annotations": {
       "list": [ ]
    },
-   "description": "Detailed controller monitoring for Argo Workflows. Tracks controller errors, Kubernetes API request patterns, work queue metrics (depth, latency, duration, retries), worker saturation, rate limiter behavior, CronWorkflow triggers, and deprecated feature usage. Use this dashboard to diagnose controller performance issues, identify API server pressure, and monitor processing backlogs. The dashboards were generated using [argo-workflows-mixin](https://github.com/adinhodovic/argo-workflows-mixin). Open issues and create feature requests in the repository.",
+   "description": "Detailed controller monitoring for Argo Workflows. Tracks controller errors, Kubernetes API request patterns, work queue metrics, and worker saturation. Use this dashboard to diagnose controller performance issues, identify API server pressure, and monitor processing backlogs. The dashboards were generated using [argo-workflows-mixin](https://github.com/adinhodovic/argo-workflows-mixin). Open issues and create feature requests in the repository.",
    "editable": false,
    "links": [
       {
@@ -83,7 +83,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Current percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.",
+         "description": "Current percentage of Kubernetes API requests succeeding. No data means there were no requests in the selected interval.",
          "fieldConfig": {
             "defaults": {
                "mappings": [ ],
@@ -230,7 +230,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Rate of controller errors by cause. Common causes include OperationPanic, CronWorkflowSubmissionError, and CronWorkflowSpecError. Persistent errors indicate controller-level issues requiring investigation.",
+         "description": "Controller errors per second by cause. Common causes include OperationPanic, CronWorkflowSubmissionError, and CronWorkflowSpecError.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -670,7 +670,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Rate of items being added to controller work queues. Spikes indicate bursts of workflow activity or reconciliation events.",
+         "description": "Items added per second to controller work queues. Spikes indicate bursts of workflow activity or reconciliation events.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -852,7 +852,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Rate of queue message retries. Frequent retries indicate transient failures in workflow processing. Persistent high rates suggest systemic issues.",
+         "description": "Queue retries per second. Frequent retries indicate transient failures in workflow processing or reconciliation.",
          "fieldConfig": {
             "defaults": {
                "custom": {
