@@ -70,25 +70,6 @@
               dashboard_url: $._config.dashboardUrls['argo-workflows-overview'] + '?var-namespace={{ $labels.namespace }}' + clusterVariableQueryString,
             },
           },
-          if $._config.alerts.controllerNotLeader.enabled then {
-            alert: 'ArgoWorkflowsControllerNotLeader',
-            expr: |||
-              max(
-                argo_workflows_is_leader{
-                  %(argoWorkflowsSelector)s
-                }
-              ) == 0
-            ||| % $._config,
-            'for': $._config.alerts.controllerNotLeader.interval,
-            labels: {
-              severity: $._config.alerts.controllerNotLeader.severity,
-            },
-            annotations: {
-              summary: 'Argo Workflows controller has no leader.',
-              description: 'No Argo Workflows controller is the leader for the past %(interval)s. Workflows will not be processed.' % $._config.alerts.controllerNotLeader,
-              dashboard_url: $._config.dashboardUrls['argo-workflows-overview'] + clusterVariableQueryString,
-            },
-          },
           if $._config.alerts.controllerHighErrorRate.enabled then {
             alert: 'ArgoWorkflowsControllerHighErrorRate',
             expr: |||
@@ -140,32 +121,6 @@
               summary: 'Argo Workflows controller queue depth is high.',
               description: 'Queue {{ $labels.queue_name }} has a depth of more than %(threshold)s for the past %(interval)s.' % $._config.alerts.queueDepthHigh,
               dashboard_url: $._config.dashboardUrls['argo-workflows-controller'] + clusterVariableQueryString,
-            },
-          },
-          if $._config.alerts.podPendingHigh.enabled then {
-            alert: 'ArgoWorkflowsPodPendingHigh',
-            expr: |||
-              sum(
-                argo_workflows_pods_gauge{
-                  %(argoWorkflowsSelector)s,
-                  phase="Pending"
-                }
-              ) by (%(clusterLabel)s, namespace)
-              > %(threshold)s
-            ||| % (
-              $._config
-              {
-                threshold: $._config.alerts.podPendingHigh.threshold,
-              }
-            ),
-            'for': $._config.alerts.podPendingHigh.interval,
-            labels: {
-              severity: $._config.alerts.podPendingHigh.severity,
-            },
-            annotations: {
-              summary: 'Argo Workflows has many pending pods.',
-              description: 'More than %(threshold)s workflow pods are pending in {{ $labels.namespace }} for the past %(interval)s.' % $._config.alerts.podPendingHigh,
-              dashboard_url: $._config.dashboardUrls['argo-workflows-overview'] + '?var-namespace={{ $labels.namespace }}' + clusterVariableQueryString,
             },
           },
         ]),

@@ -45,20 +45,6 @@
     "for": "15m"
     "labels":
       "severity": "warning"
-  - "alert": "ArgoWorkflowsControllerNotLeader"
-    "annotations":
-      "dashboard_url": "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview"
-      "description": "No Argo Workflows controller is the leader for the past 5m. Workflows will not be processed."
-      "summary": "Argo Workflows controller has no leader."
-    "expr": |
-      max(
-        argo_workflows_is_leader{
-          job=~".*"
-        }
-      ) == 0
-    "for": "5m"
-    "labels":
-      "severity": "critical"
   - "alert": "ArgoWorkflowsControllerHighErrorRate"
     "annotations":
       "dashboard_url": "https://grafana.com/d/argo-workflows-controller-skj2/argo-workflows-controller"
@@ -89,21 +75,5 @@
       ) by (cluster, queue_name)
       > 100
     "for": "5m"
-    "labels":
-      "severity": "warning"
-  - "alert": "ArgoWorkflowsPodPendingHigh"
-    "annotations":
-      "dashboard_url": "https://grafana.com/d/argo-workflows-overview-skj2/argo-workflows-overview?var-namespace={{ $labels.namespace }}"
-      "description": "More than 10 workflow pods are pending in {{ $labels.namespace }} for the past 15m."
-      "summary": "Argo Workflows has many pending pods."
-    "expr": |
-      sum(
-        argo_workflows_pods_gauge{
-          job=~".*",
-          phase="Pending"
-        }
-      ) by (cluster, namespace)
-      > 10
-    "for": "15m"
     "labels":
       "severity": "warning"

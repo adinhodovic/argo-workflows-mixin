@@ -21,7 +21,54 @@ local grid = g.util.grid;
       ];
 
       local defaultFilters = util.filters($._config);
+      local controllerFilters = defaultFilters;
       local queries = {
+        // Summary
+        controllerIsLeader: |||
+          max(
+            argo_workflows_is_leader{
+              %(default)s
+            }
+          )
+        ||| % controllerFilters,
+
+        controllerErrorRate: |||
+          sum(
+            rate(
+              argo_workflows_error_count{
+                %(default)s
+              }[$__rate_interval]
+            )
+          )
+        ||| % controllerFilters,
+
+        k8sNonSuccessRequestRate: |||
+          sum(
+            rate(
+              argo_workflows_k8s_request_total{
+                %(default)s,
+                status_code!~"2..|101"
+              }[$__rate_interval]
+            )
+          )
+        ||| % controllerFilters,
+
+        totalQueueDepth: |||
+          sum(
+            argo_workflows_queue_depth_gauge{
+              %(default)s
+            }
+          )
+        ||| % controllerFilters,
+
+        totalBusyWorkers: |||
+          sum(
+            argo_workflows_workers_busy_count{
+              %(default)s
+            }
+          )
+        ||| % controllerFilters,
+
         // Errors
         errorCountByCause: |||
           sum(
@@ -31,7 +78,7 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (cause)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         logMessagesByLevel: |||
           sum(
@@ -41,7 +88,7 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (level)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         // K8s API
         k8sRequestRateByKindVerb: |||
@@ -52,7 +99,7 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (kind, verb)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         k8sRequestRateByStatusCode: |||
           sum(
@@ -62,7 +109,28 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (status_code)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
+
+        k8sRequestSuccessRate: |||
+          (
+            sum(
+              rate(
+                argo_workflows_k8s_request_total{
+                  %(default)s,
+                  status_code=~"2..|101"
+                }[$__rate_interval]
+              )
+            )
+            /
+            sum(
+              rate(
+                argo_workflows_k8s_request_total{
+                  %(default)s
+                }[$__rate_interval]
+              )
+            )
+          ) * 100
+        ||| % controllerFilters,
 
         k8sRequestDurationP50: |||
           histogram_quantile(
@@ -75,7 +143,7 @@ local grid = g.util.grid;
               )
             ) by (le)
           )
-        ||| % defaultFilters,
+        ||| % controllerFilters,
         k8sRequestDurationP95: std.strReplace(queries.k8sRequestDurationP50, '0.5', '0.95'),
         k8sRequestDurationP99: std.strReplace(queries.k8sRequestDurationP50, '0.5', '0.99'),
 
@@ -86,7 +154,7 @@ local grid = g.util.grid;
               %(default)s
             }
           ) by (queue_name)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         queueAdds: |||
           sum(
@@ -96,7 +164,7 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (queue_name)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         queueLatencyP50: |||
           histogram_quantile(
@@ -109,7 +177,7 @@ local grid = g.util.grid;
               )
             ) by (le, queue_name)
           )
-        ||| % defaultFilters,
+        ||| % controllerFilters,
         queueLatencyP95: std.strReplace(queries.queueLatencyP50, '0.5', '0.95'),
 
         queueDurationP50: |||
@@ -123,7 +191,7 @@ local grid = g.util.grid;
               )
             ) by (le, queue_name)
           )
-        ||| % defaultFilters,
+        ||| % controllerFilters,
         queueDurationP95: std.strReplace(queries.queueDurationP50, '0.5', '0.95'),
 
         queueRetries: |||
@@ -134,7 +202,7 @@ local grid = g.util.grid;
               }[$__rate_interval]
             )
           ) by (queue_name)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         queueLongestRunning: |||
           max(
@@ -142,7 +210,7 @@ local grid = g.util.grid;
               %(default)s
             }
           ) by (queue_name)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         queueUnfinishedWork: |||
           sum(
@@ -150,7 +218,7 @@ local grid = g.util.grid;
               %(default)s
             }
           ) by (queue_name)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         // Workers
         workersBusyCount: |||
@@ -159,7 +227,7 @@ local grid = g.util.grid;
               %(default)s
             }
           ) by (worker_type)
-        ||| % defaultFilters,
+        ||| % controllerFilters,
 
         // Rate Limiter
         clientRateLimiterLatencyP50: |||
@@ -173,7 +241,7 @@ local grid = g.util.grid;
               )
             ) by (le)
           )
-        ||| % defaultFilters,
+        ||| % controllerFilters,
         clientRateLimiterLatencyP95: std.strReplace(queries.clientRateLimiterLatencyP50, '0.5', '0.95'),
 
         resourceRateLimiterLatencyP50: |||
@@ -187,37 +255,48 @@ local grid = g.util.grid;
               )
             ) by (le)
           )
-        ||| % defaultFilters,
+        ||| % controllerFilters,
         resourceRateLimiterLatencyP95: std.strReplace(queries.resourceRateLimiterLatencyP50, '0.5', '0.95'),
 
-        // CronWorkflows
-        cronWorkflowTriggered: |||
-          sum(
-            rate(
-              argo_workflows_cronworkflows_triggered_total{
-                %(default)s
-              }[$__rate_interval]
-            )
-          ) by (name, namespace)
-        ||| % defaultFilters,
-
-        // Deprecated Features
-        deprecatedFeatures: |||
-          sum(
-            rate(
-              argo_workflows_deprecated_feature{
-                %(default)s
-              }[$__rate_interval]
-            )
-          ) by (feature)
-        ||| % defaultFilters,
       };
 
       local panels = {
+        controllerErrorRateStat:
+          mixinUtils.dashboards.statPanel(
+            'Controller Errors',
+            'ops',
+            queries.controllerErrorRate,
+            description='Current controller error rate across the selected controllers. Use this as the first signal for reconciliation failures.',
+          ),
+
+        k8sRequestSuccessRateStat:
+          mixinUtils.dashboards.statPanel(
+            'K8s API Success Rate',
+            'percent',
+            queries.k8sRequestSuccessRate,
+            description='Current percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.',
+          ),
+
+        totalQueueDepthStat:
+          mixinUtils.dashboards.statPanel(
+            'Queue Depth',
+            'short',
+            queries.totalQueueDepth,
+            description='Current total queue depth across controller work queues for the selected controllers.',
+          ),
+
+        totalBusyWorkersStat:
+          mixinUtils.dashboards.statPanel(
+            'Busy Workers',
+            'short',
+            queries.totalBusyWorkers,
+            description='Current number of busy workers across the selected controllers.',
+          ),
+
         // Errors
         errorCountByCauseTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Error Rate by Cause',
+            'Controller Errors by Cause',
             'ops',
             queries.errorCountByCause,
             '{{ cause }}',
@@ -256,6 +335,21 @@ local grid = g.util.grid;
             stack='normal',
           ),
 
+        k8sRequestSuccessRateTimeSeries:
+          mixinUtils.dashboards.timeSeriesPanel(
+            'K8s API Success Rate',
+            'percent',
+            [
+              {
+                expr: queries.k8sRequestSuccessRate,
+                legend: 'Success Rate',
+              },
+            ],
+            description='Percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.',
+            min=0,
+            max=100,
+          ),
+
         k8sRequestDurationTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
             'K8s API Request Duration',
@@ -290,7 +384,7 @@ local grid = g.util.grid;
 
         queueAddsTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Queue Additions Rate',
+            'Queue Additions',
             'ops',
             queries.queueAdds,
             '{{ queue_name }}',
@@ -334,7 +428,7 @@ local grid = g.util.grid;
 
         queueRetriesTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Queue Retries Rate',
+            'Queue Retries',
             'ops',
             queries.queueRetries,
             '{{ queue_name }}',
@@ -372,60 +466,32 @@ local grid = g.util.grid;
             stack='normal',
           ),
 
-        // Rate Limiter
-        rateLimiterLatencyTimeSeries:
-          mixinUtils.dashboards.timeSeriesPanel(
-            'Rate Limiter Latency',
-            's',
-            [
-              {
-                expr: queries.clientRateLimiterLatencyP50,
-                legend: 'Client P50',
-              },
-              {
-                expr: queries.clientRateLimiterLatencyP95,
-                legend: 'Client P95',
-              },
-              {
-                expr: queries.resourceRateLimiterLatencyP50,
-                legend: 'Resource P50',
-              },
-              {
-                expr: queries.resourceRateLimiterLatencyP95,
-                legend: 'Resource P95',
-              },
-            ],
-            description='Time spent waiting for client-side and resource rate limiters. High values indicate the controller is being throttled to protect the Kubernetes API server. May slow workflow processing.',
-          ),
-
-        // CronWorkflows
-        cronWorkflowTriggeredTimeSeries:
-          mixinUtils.dashboards.timeSeriesPanel(
-            'CronWorkflow Trigger Rate',
-            'ops',
-            queries.cronWorkflowTriggered,
-            '{{ namespace }}/{{ name }}',
-            description='Rate of CronWorkflow triggers by name and namespace. Use to verify scheduled workflows are firing as expected. Missing triggers indicate scheduling issues.',
-            stack='normal',
-          ),
-
-        // Deprecated Features
-        deprecatedFeaturesTimeSeries:
-          mixinUtils.dashboards.timeSeriesPanel(
-            'Deprecated Feature Usage',
-            'ops',
-            queries.deprecatedFeatures,
-            '{{ feature }}',
-            description='Rate of deprecated feature usage. These features may be removed in future versions. Plan migration to supported alternatives.',
-            stack='normal',
-          ),
       };
 
       local rows =
         [
-          row.new('Errors') +
+          row.new('Summary') +
           row.gridPos.withX(0) +
           row.gridPos.withY(0) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+
+        ] +
+        grid.wrapPanels(
+          [
+            panels.controllerErrorRateStat,
+            panels.k8sRequestSuccessRateStat,
+            panels.totalQueueDepthStat,
+            panels.totalBusyWorkersStat,
+          ],
+          panelWidth=6,
+          panelHeight=4,
+          startY=1
+        ) +
+        [
+          row.new('Errors') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(5) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
@@ -436,29 +502,30 @@ local grid = g.util.grid;
           ],
           panelWidth=12,
           panelHeight=8,
-          startY=1
+          startY=6
         ) +
         [
           row.new('Kubernetes API') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(9) +
+          row.gridPos.withY(14) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
         grid.wrapPanels(
           [
             panels.k8sRequestRateByKindVerbTimeSeries,
-            panels.k8sRequestRateByStatusCodeTimeSeries,
             panels.k8sRequestDurationTimeSeries,
+            panels.k8sRequestRateByStatusCodeTimeSeries,
+            panels.k8sRequestSuccessRateTimeSeries,
           ],
           panelWidth=12,
           panelHeight=8,
-          startY=10
+          startY=15
         ) +
         [
           row.new('Work Queues') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(26) +
+          row.gridPos.withY(31) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
@@ -475,38 +542,7 @@ local grid = g.util.grid;
           ],
           panelWidth=12,
           panelHeight=8,
-          startY=27
-        ) +
-        [
-          row.new('Rate Limiting') +
-          row.gridPos.withX(0) +
-          row.gridPos.withY(59) +
-          row.gridPos.withW(24) +
-          row.gridPos.withH(1),
-        ] +
-        grid.wrapPanels(
-          [
-            panels.rateLimiterLatencyTimeSeries,
-          ],
-          panelWidth=12,
-          panelHeight=8,
-          startY=60
-        ) +
-        [
-          row.new('CronWorkflows') +
-          row.gridPos.withX(0) +
-          row.gridPos.withY(68) +
-          row.gridPos.withW(24) +
-          row.gridPos.withH(1),
-        ] +
-        grid.wrapPanels(
-          [
-            panels.cronWorkflowTriggeredTimeSeries,
-            panels.deprecatedFeaturesTimeSeries,
-          ],
-          panelWidth=12,
-          panelHeight=8,
-          startY=69
+          startY=32
         );
 
 
@@ -529,7 +565,7 @@ local grid = g.util.grid;
         rows
       ) +
       dashboard.withAnnotations(
-        mixinUtils.dashboards.annotations($._config, defaultFilters)
+        mixinUtils.dashboards.annotations($._config, controllerFilters)
       ),
   },
 }

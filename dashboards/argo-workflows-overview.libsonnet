@@ -3,6 +3,8 @@ local g = import 'github.com/grafana/grafonnet/gen/grafonnet-latest/main.libsonn
 local util = import 'util.libsonnet';
 
 local dashboard = g.dashboard;
+local variable = dashboard.variable;
+local query = variable.query;
 local row = g.panel.row;
 local grid = g.util.grid;
 
@@ -11,7 +13,6 @@ local tablePanel = g.panel.table;
 // Table
 local tbStandardOptions = tablePanel.standardOptions;
 local tbQueryOptions = tablePanel.queryOptions;
-local tbPanelOptions = tablePanel.panelOptions;
 local tbOverride = tbStandardOptions.override;
 
 {
@@ -20,17 +21,81 @@ local tbOverride = tbStandardOptions.override;
     ['%s.json' % dashboardName]:
 
       local defaultVariables = util.variables($._config);
+      local workflowNamespaceSelector = 'exported_namespace=~"$workflow_namespace"';
+      local workflowNamespaceVariable =
+        query.new(
+          'workflow_namespace',
+          'label_values(argo_workflows_total_count{%(cluster)s}, exported_namespace)' % util.filters($._config)
+        ) +
+        query.withDatasourceFromVariable(defaultVariables.datasource) +
+        query.withSort() +
+        query.generalOptions.withLabel('Workflow Namespace') +
+        query.selectionOptions.withMulti(true) +
+        query.selectionOptions.withIncludeAll(true) +
+        query.refresh.onLoad() +
+        query.refresh.onTime();
+      local workflowJobVariable =
+        query.new(
+          'job',
+          'label_values(argo_workflows_total_count{%(cluster)s, %(namespace)s}, job)' % {
+            cluster: util.filters($._config).cluster,
+            namespace: util.filters($._config).namespace,
+          }
+        ) +
+        query.withDatasourceFromVariable(defaultVariables.datasource) +
+        query.withSort() +
+        query.generalOptions.withLabel('Job') +
+        query.selectionOptions.withMulti(true) +
+        query.selectionOptions.withIncludeAll(true) +
+        query.refresh.onLoad() +
+        query.refresh.onTime();
 
       local variables = [
         defaultVariables.datasource,
         defaultVariables.cluster,
         defaultVariables.namespace,
-        defaultVariables.job,
+        workflowJobVariable,
+        workflowNamespaceVariable,
       ];
 
       local defaultFilters = util.filters($._config);
+      local workflowBaseFilters = defaultFilters + {
+        workflowNamespace: workflowNamespaceSelector,
+        base: |||
+          %(cluster)s,
+          %(namespace)s,
+          %(workflowNamespace)s,
+          %(job)s
+        ||| % {
+          cluster: defaultFilters.cluster,
+          namespace: defaultFilters.namespace,
+          workflowNamespace: workflowNamespaceSelector,
+          job: defaultFilters.job,
+        },
+      };
+      local workflowFilters = workflowBaseFilters + {
+        default: workflowBaseFilters.base,
+      };
       local queries = {
         // Summary
+        activeWorkflows: |||
+          sum(
+            argo_workflows_gauge{
+              %(default)s,
+              phase=~"Pending|Running"
+            }
+          )
+        ||| % defaultFilters,
+
+        unhealthyWorkflows: |||
+          sum(
+            argo_workflows_gauge{
+              %(default)s,
+              phase=~"Error|Failed"
+            }
+          )
+        ||| % defaultFilters,
+
         runningWorkflows: |||
           sum(
             argo_workflows_gauge{
@@ -58,7 +123,7 @@ local tbOverride = tbStandardOptions.override;
               }[1h]
             )
           )
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
         succeededWorkflows1h: |||
           sum(
@@ -69,7 +134,7 @@ local tbOverride = tbStandardOptions.override;
               }[1h]
             )
           )
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
         errorWorkflows1h: |||
           sum(
@@ -80,7 +145,18 @@ local tbOverride = tbStandardOptions.override;
               }[1h]
             )
           )
-        ||| % defaultFilters,
+        ||| % workflowFilters,
+
+        workflowCompletions6h: |||
+          sum(
+            increase(
+              argo_workflows_total_count{
+                %(default)s,
+                phase=~"Succeeded|Failed|Error"
+              }[6h]
+            )
+          )
+        ||| % workflowFilters,
 
         runningPods: |||
           sum(
@@ -116,27 +192,27 @@ local tbOverride = tbStandardOptions.override;
           ) by (phase)
         ||| % defaultFilters,
 
-        workflowRateByPhase1h: |||
+        workflowCompletionsByPhase6h: |||
           sum(
             increase(
               argo_workflows_total_count{
                 %(default)s
-              }[1h]
+              }[6h]
             )
           ) by (phase)
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
-        workflowRateByNamespace1h: |||
+        workflowCompletionsByNamespace6h: |||
           topk(20,
             sum(
               increase(
                 argo_workflows_total_count{
                   %(default)s
-                }[1h]
+                }[6h]
               )
-            ) by (namespace)
+            ) by (exported_namespace)
           )
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
         podsByPhasePieChart: |||
           sum(
@@ -155,55 +231,35 @@ local tbOverride = tbStandardOptions.override;
           ) by (phase)
         ||| % defaultFilters,
 
-        workflowRateByPhase: |||
+        workflowCompletionsByPhase: |||
           sum(
-            rate(
+            increase(
               argo_workflows_total_count{
                 %(default)s
               }[$__rate_interval]
             )
           ) by (phase)
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
-        workflowSuccessRate: |||
+        workflowSuccessRate6h: |||
           sum(
-            rate(
+            increase(
               argo_workflows_total_count{
                 %(default)s,
                 phase="Succeeded"
-              }[$__rate_interval]
+              }[6h]
             )
           )
           /
           sum(
-            rate(
+            increase(
               argo_workflows_total_count{
                 %(default)s
-              }[$__rate_interval]
+              }[6h]
             )
           )
           * 100
-        ||| % defaultFilters,
-
-        workflowFailureRate: |||
-          sum(
-            rate(
-              argo_workflows_total_count{
-                %(default)s,
-                phase=~"Failed|Error"
-              }[$__rate_interval]
-            )
-          )
-          /
-          sum(
-            rate(
-              argo_workflows_total_count{
-                %(default)s
-              }[$__rate_interval]
-            )
-          )
-          * 100
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
         operationDurationP50: |||
           histogram_quantile(
@@ -229,19 +285,9 @@ local tbOverride = tbStandardOptions.override;
           ) by (phase)
         ||| % defaultFilters,
 
-        podRateByPhase: |||
-          sum(
-            rate(
-              argo_workflows_pods_total_count{
-                %(default)s
-              }[$__rate_interval]
-            )
-          ) by (phase)
-        ||| % defaultFilters,
-
         podPendingByReason: |||
           sum(
-            rate(
+            increase(
               argo_workflows_pod_pending_count{
                 %(default)s
               }[$__rate_interval]
@@ -251,7 +297,7 @@ local tbOverride = tbStandardOptions.override;
 
         podRestartsByReason: |||
           sum(
-            rate(
+            increase(
               argo_workflows_pod_restarts_total{
                 %(default)s
               }[$__rate_interval]
@@ -261,7 +307,7 @@ local tbOverride = tbStandardOptions.override;
 
         podMissing: |||
           sum(
-            rate(
+            increase(
               argo_workflows_pod_missing{
                 %(default)s
               }[$__rate_interval]
@@ -269,82 +315,82 @@ local tbOverride = tbStandardOptions.override;
           ) by (node_phase, recently_started)
         ||| % defaultFilters,
 
+        cronWorkflowTriggered: |||
+          sum(
+            increase(
+              argo_workflows_cronworkflows_triggered_total{
+                %(default)s
+              }[$__rate_interval]
+            )
+          ) by (name, namespace)
+        ||| % defaultFilters,
+
+        cronWorkflowConcurrencyPolicyTriggered: |||
+          sum(
+            increase(
+              argo_workflows_cronworkflows_concurrencypolicy_triggered{
+                %(default)s
+              }[$__rate_interval]
+            )
+          ) by (name, namespace)
+        ||| % defaultFilters,
+
         // Table
-        workflowRateByNamespace1hForTable: |||
+        workflowCompletionsByNamespace6hForTable: |||
           topk(40,
             sum(
               increase(
                 argo_workflows_total_count{
                   %(default)s
-                }[1h]
+                }[6h]
               )
-            ) by (namespace)
+            ) by (exported_namespace)
           )
-        ||| % defaultFilters,
+        ||| % workflowFilters,
 
         local namespaceRpsTop40k = {
           rpsTop40k: |||
-            and on (namespace) (
+            and on (exported_namespace) (
               %s
             )
-          ||| % queries.workflowRateByNamespace1hForTable,
+          ||| % queries.workflowCompletionsByNamespace6hForTable,
         },
 
-        succeededWorkflowsByNamespace1h: |||
+        succeededWorkflowsByNamespace6h: |||
           sum(
             increase(
               argo_workflows_total_count{
                 %(default)s,
                 phase="Succeeded"
-              }[1h]
+              }[6h]
             )
-          ) by (namespace)
+          ) by (exported_namespace)
           %(rpsTop40k)s
-        ||| % (defaultFilters + namespaceRpsTop40k),
+        ||| % (workflowFilters + namespaceRpsTop40k),
 
-        failedWorkflowsByNamespace1h: |||
+        failedWorkflowsByNamespace6h: |||
           sum(
             increase(
               argo_workflows_total_count{
                 %(default)s,
                 phase="Failed"
-              }[1h]
+              }[6h]
             )
-          ) by (namespace)
+          ) by (exported_namespace)
           %(rpsTop40k)s
-        ||| % (defaultFilters + namespaceRpsTop40k),
+        ||| % (workflowFilters + namespaceRpsTop40k),
 
-        errorWorkflowsByNamespace1h: |||
+        errorWorkflowsByNamespace6h: |||
           sum(
             increase(
               argo_workflows_total_count{
                 %(default)s,
                 phase="Error"
-              }[1h]
+              }[6h]
             )
-          ) by (namespace)
+          ) by (exported_namespace)
           %(rpsTop40k)s
-        ||| % (defaultFilters + namespaceRpsTop40k),
-
-        pendingWorkflowsByNamespace: |||
-          sum(
-            argo_workflows_gauge{
-              %(default)s,
-              phase="Pending"
-            }
-          ) by (namespace)
-          %(rpsTop40k)s
-        ||| % (defaultFilters + namespaceRpsTop40k),
-
-        runningWorkflowsByNamespace: |||
-          sum(
-            argo_workflows_gauge{
-              %(default)s,
-              phase="Running"
-            }
-          ) by (namespace)
-          %(rpsTop40k)s
-        ||| % (defaultFilters + namespaceRpsTop40k),
+        ||| % (workflowFilters + namespaceRpsTop40k),
       };
 
       local panels = {
@@ -366,6 +412,22 @@ local tbOverride = tbStandardOptions.override;
             description='Number of workflows currently in the Pending phase. A high count may indicate resource constraints, scheduling issues, or parallelism limits.',
           ),
 
+        activeWorkflowsStat:
+          mixinUtils.dashboards.statPanel(
+            'Active Workflows',
+            'short',
+            queries.activeWorkflows,
+            description='Number of workflows currently in Pending or Running. This is the main at-a-glance workload indicator for the cluster.',
+          ),
+
+        unhealthyWorkflowsStat:
+          mixinUtils.dashboards.statPanel(
+            'Unhealthy Workflows',
+            'short',
+            queries.unhealthyWorkflows,
+            description='Number of workflows currently in Failed or Error. Any sustained non-zero value deserves investigation.',
+          ),
+
         failedWorkflows1hStat:
           mixinUtils.dashboards.statPanel(
             'Failed Workflows [1h]',
@@ -380,6 +442,24 @@ local tbOverride = tbStandardOptions.override;
             'short',
             queries.succeededWorkflows1h,
             description='Number of workflows that completed successfully in the past hour.',
+          ),
+
+        workflowCompletions1hStat:
+          mixinUtils.dashboards.statPanel(
+            'Workflow Completions [6h]',
+            'short',
+            queries.workflowCompletions6h,
+            instant=true,
+            description='Number of workflows that reached a terminal phase in the past 6 hours. Use this to gauge recent throughput.',
+          ),
+
+        workflowSuccessRateStat:
+          mixinUtils.dashboards.statPanel(
+            'Success Rate [6h]',
+            'percent',
+            queries.workflowSuccessRate6h,
+            instant=true,
+            description='Percentage of completed workflows succeeding over the past 6 hours. This gives a recent high-level health signal without being too noisy.',
           ),
 
         runningPodsStat:
@@ -407,22 +487,46 @@ local tbOverride = tbStandardOptions.override;
             description='Distribution of currently active workflows across phases (Pending, Running, Succeeded, Failed, Error). A healthy system shows mostly Running and Succeeded workflows.',
           ),
 
-        workflowRateByPhase1hPieChart:
+        workflowCompletionsByPhase6hPieChart:
           mixinUtils.dashboards.pieChartPanel(
-            'Workflow Completions by Phase [1h]',
+            'Workflow Completions by Phase [6h]',
             'short',
-            queries.workflowRateByPhase1h,
+            queries.workflowCompletionsByPhase6h,
             '{{ phase }}',
-            description='Distribution of workflow completions by phase over the past hour. High proportions of Failed or Error phases indicate systemic issues.',
+            description='Distribution of workflow completions by phase over the past 6 hours. High proportions of Failed or Error phases indicate systemic issues.',
           ),
 
-        workflowRateByNamespace1hPieChart:
+        workflowCompletionsByNamespace6hPieChart:
           mixinUtils.dashboards.pieChartPanel(
-            'Workflow Completions by Namespace [1h]',
+            'Workflow Completions by Namespace [6h]',
             'short',
-            queries.workflowRateByNamespace1h,
-            '{{ namespace }}',
-            description='Distribution of workflow activity across namespaces over the past hour. Identifies which namespaces are the most active.',
+            queries.workflowCompletionsByNamespace6h,
+            '{{ exported_namespace }}',
+            description='Distribution of workflow activity across namespaces over the past 6 hours. Identifies which namespaces are the most active.',
+          ),
+
+        unhealthyWorkflowsByNamespacePieChart:
+          mixinUtils.dashboards.pieChartPanel(
+            'Failed/Error Workflows by Namespace [6h]',
+            'short',
+            [
+              {
+                expr: |||
+                  topk(10,
+                    sum(
+                      increase(
+                        argo_workflows_total_count{
+                          %(default)s,
+                          phase=~"Error|Failed"
+                        }[6h]
+                      )
+                    ) by (exported_namespace)
+                  )
+                ||| % workflowFilters,
+                legend: '{{ exported_namespace }}',
+              },
+            ],
+            description='Namespaces with the most Failed or Error workflow completions over the past 6 hours. This highlights problem areas without drilling into the table first.',
           ),
 
         podsByPhasePieChart:
@@ -445,42 +549,27 @@ local tbOverride = tbStandardOptions.override;
             stack='normal',
           ),
 
-        workflowRateByPhaseTimeSeries:
+        workflowCompletionsByPhaseTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Workflow Rate by Phase',
-            'ops',
-            queries.workflowRateByPhase,
+            'Workflow Completions by Phase',
+            'short',
+            queries.workflowCompletionsByPhase,
             '{{ phase }}',
-            description='Rate of workflows entering each phase over time. Use this to identify trends in workflow failures, errors, and throughput.',
+            description='Workflows reaching each phase within each interval. This shows throughput and where recent workflow outcomes are landing.',
             stack='normal',
           ),
 
         workflowSuccessRateTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Workflow Success Rate',
+            'Workflow Success Rate [6h]',
             'percent',
             [
               {
-                expr: queries.workflowSuccessRate,
-                legend: 'Success Rate',
+                expr: queries.workflowSuccessRate6h,
+                legend: 'Success Rate [6h]',
               },
             ],
-            description='Percentage of workflows completing successfully. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.',
-            min=0,
-            max=100,
-          ),
-
-        workflowFailureRateTimeSeries:
-          mixinUtils.dashboards.timeSeriesPanel(
-            'Workflow Failure Rate',
-            'percent',
-            [
-              {
-                expr: queries.workflowFailureRate,
-                legend: 'Failure Rate',
-              },
-            ],
-            description='Percentage of workflows failing or erroring. Rising failure rates require investigation into workflow logs and node status.',
+            description='Percentage of workflows completing successfully over the past 6 hours. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.',
             min=0,
             max=100,
           ),
@@ -517,78 +606,93 @@ local tbOverride = tbStandardOptions.override;
             stack='normal',
           ),
 
-        podRateByPhaseTimeSeries:
-          mixinUtils.dashboards.timeSeriesPanel(
-            'Pod Rate by Phase',
-            'ops',
-            queries.podRateByPhase,
-            '{{ phase }}',
-            description='Rate of pods entering each phase. Use to monitor pod throughput and identify scheduling bottlenecks.',
-            stack='normal',
-          ),
-
         podPendingByReasonTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Pod Pending Rate by Reason',
-            'ops',
+            'Pending Pods by Reason',
+            'short',
             queries.podPendingByReason,
             '{{ reason }}',
-            description='Rate of pods entering pending state by reason. Helps identify specific scheduling or resource issues causing pod delays.',
+            description='Pods entering pending state within each interval, grouped by reason. Helps identify scheduling or resource issues behind pod backlog.',
             stack='normal',
           ),
 
         podRestartsByReasonTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
             'Pod Restarts by Reason',
-            'ops',
+            'short',
             queries.podRestartsByReason,
             '{{ reason }}',
-            description='Rate of pod restarts due to infrastructure failures. Common reasons include Evicted, NodeShutdown, and NodeAffinity. Persistent restarts indicate infrastructure instability.',
+            description='Pod restarts within each interval, grouped by reason. Persistent restarts indicate infrastructure instability.',
             stack='normal',
           ),
 
         podMissingTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
             'Missing Pods',
-            'ops',
+            'short',
             queries.podMissing,
             '{{ node_phase }}/{{ recently_started }}',
-            description='Rate of pods not found or deleted by Kubernetes. May indicate aggressive pod eviction, node failures, or resource pressure.',
+            description='Pods reported missing within each interval. Spikes may indicate aggressive eviction, node failure, or resource pressure.',
+            stack='normal',
+          ),
+
+        cronWorkflowTriggersTimeSeries:
+          mixinUtils.dashboards.timeSeriesPanel(
+            'CronWorkflow Triggers',
+            'short',
+            queries.cronWorkflowTriggered,
+            '{{ namespace }}/{{ name }}',
+            description='CronWorkflow triggers within each interval. Use this to verify scheduled workflows are firing as expected.',
+            stack='normal',
+          ),
+
+        cronWorkflowConcurrencyPolicyTriggeredTimeSeries:
+          mixinUtils.dashboards.timeSeriesPanel(
+            'CronWorkflow Concurrency Policy Triggered',
+            'short',
+            queries.cronWorkflowConcurrencyPolicyTriggered,
+            '{{ namespace }}/{{ name }}',
+            description='CronWorkflow concurrency policy actions within each interval. Use this to spot schedules being affected by `Forbid` or `Replace` policy behavior.',
             stack='normal',
           ),
 
         // Table
         workflowOverviewTable:
           mixinUtils.dashboards.tablePanel(
-            'Workflow Overview by Namespace [1h]',
+            'Workflow Overview by Namespace [6h]',
             'short',
             [
               {
-                expr: queries.workflowRateByNamespace1hForTable,
+                expr: queries.workflowCompletionsByNamespace6hForTable,
                 legend: 'Total Workflows',
               },
               {
-                expr: queries.succeededWorkflowsByNamespace1h,
+                expr: queries.succeededWorkflowsByNamespace6h,
                 legend: 'Succeeded',
               },
               {
-                expr: queries.failedWorkflowsByNamespace1h,
+                expr: queries.failedWorkflowsByNamespace6h,
                 legend: 'Failed',
               },
               {
-                expr: queries.errorWorkflowsByNamespace1h,
+                expr: queries.errorWorkflowsByNamespace6h,
                 legend: 'Errors',
               },
               {
-                expr: queries.runningWorkflowsByNamespace,
-                legend: 'Running',
-              },
-              {
-                expr: queries.pendingWorkflowsByNamespace,
-                legend: 'Pending',
+                expr: |||
+                  (
+                    %(succeeded)s
+                    /
+                    %(total)s
+                  ) * 100
+                ||| % {
+                  succeeded: queries.succeededWorkflowsByNamespace6h,
+                  total: queries.workflowCompletionsByNamespace6hForTable,
+                },
+                legend: 'Success Rate',
               },
             ],
-            description='An overview table showing workflow counts by namespace over the past hour.',
+            description='An overview table showing workflow counts by namespace over the past 6 hours.',
             sortBy={ name: 'Total Workflows', desc: true },
             transformations=[
               tbQueryOptions.transformation.withId(
@@ -600,22 +704,20 @@ local tbOverride = tbStandardOptions.override;
               tbQueryOptions.transformation.withOptions(
                 {
                   renameByName: {
-                    namespace: 'Namespace',
+                    exported_namespace: 'Namespace',
                     'Value #A': 'Total Workflows',
                     'Value #B': 'Succeeded',
                     'Value #C': 'Failed',
                     'Value #D': 'Errors',
-                    'Value #E': 'Running',
-                    'Value #F': 'Pending',
+                    'Value #E': 'Success Rate',
                   },
                   indexByName: {
-                    namespace: 0,
+                    exported_namespace: 0,
                     'Value #A': 1,
                     'Value #B': 2,
                     'Value #C': 3,
                     'Value #D': 4,
                     'Value #E': 5,
-                    'Value #F': 6,
                   },
                   excludeByName: {
                     Time: true,
@@ -626,7 +728,28 @@ local tbOverride = tbStandardOptions.override;
             overrides=[
               tbOverride.byName.new('Total Workflows') +
               tbOverride.byName.withPropertiesFromOptions(
-                tbStandardOptions.withUnit('short')
+                tbStandardOptions.withUnit('short') +
+                tbStandardOptions.withDecimals(0)
+              ),
+              tbOverride.byName.new('Succeeded') +
+              tbOverride.byName.withPropertiesFromOptions(
+                tbStandardOptions.withUnit('short') +
+                tbStandardOptions.withDecimals(0)
+              ),
+              tbOverride.byName.new('Failed') +
+              tbOverride.byName.withPropertiesFromOptions(
+                tbStandardOptions.withUnit('short') +
+                tbStandardOptions.withDecimals(0)
+              ),
+              tbOverride.byName.new('Errors') +
+              tbOverride.byName.withPropertiesFromOptions(
+                tbStandardOptions.withUnit('short') +
+                tbStandardOptions.withDecimals(0)
+              ),
+              tbOverride.byName.new('Success Rate') +
+              tbOverride.byName.withPropertiesFromOptions(
+                tbStandardOptions.withUnit('percent') +
+                tbStandardOptions.withDecimals(1)
               ),
             ]
           ),
@@ -642,12 +765,12 @@ local tbOverride = tbStandardOptions.override;
         ] +
         grid.wrapPanels(
           [
-            panels.runningWorkflowsStat,
-            panels.pendingWorkflowsStat,
-            panels.failedWorkflows1hStat,
-            panels.succeededWorkflows1hStat,
+            panels.activeWorkflowsStat,
+            panels.unhealthyWorkflowsStat,
+            panels.workflowCompletions1hStat,
+            panels.workflowSuccessRateStat,
             panels.runningPodsStat,
-            panels.isLeaderStat,
+            panels.pendingWorkflowsStat,
           ],
           panelWidth=4,
           panelHeight=4,
@@ -656,8 +779,8 @@ local tbOverride = tbStandardOptions.override;
         grid.wrapPanels(
           [
             panels.workflowsByPhasePieChart,
-            panels.workflowRateByPhase1hPieChart,
-            panels.workflowRateByNamespace1hPieChart,
+            panels.workflowCompletionsByPhase6hPieChart,
+            panels.unhealthyWorkflowsByNamespacePieChart,
             panels.podsByPhasePieChart,
           ],
           panelWidth=6,
@@ -673,42 +796,51 @@ local tbOverride = tbStandardOptions.override;
         ] +
         grid.wrapPanels(
           [
+            panels.workflowOverviewTable +
+            tablePanel.gridPos.withW(24) +
+            tablePanel.gridPos.withH(10),
             panels.workflowGaugeByPhaseTimeSeries,
-            panels.workflowRateByPhaseTimeSeries,
+            panels.workflowCompletionsByPhaseTimeSeries,
             panels.workflowSuccessRateTimeSeries,
-            panels.workflowFailureRateTimeSeries,
             panels.operationDurationTimeSeries,
           ],
           panelWidth=12,
           panelHeight=8,
           startY=12
         ) +
-        grid.wrapPanels(
-          [
-            panels.workflowOverviewTable,
-          ],
-          panelWidth=24,
-          panelHeight=12,
-          startY=36
-        ) +
         [
           row.new('Pods') +
           row.gridPos.withX(0) +
-          row.gridPos.withY(48) +
+          row.gridPos.withY(44) +
           row.gridPos.withW(24) +
           row.gridPos.withH(1),
         ] +
         grid.wrapPanels(
           [
             panels.podsGaugeByPhaseTimeSeries,
-            panels.podRateByPhaseTimeSeries,
             panels.podPendingByReasonTimeSeries,
             panels.podRestartsByReasonTimeSeries,
             panels.podMissingTimeSeries,
           ],
           panelWidth=12,
           panelHeight=8,
-          startY=49
+          startY=45
+        ) +
+        [
+          row.new('CronWorkflows') +
+          row.gridPos.withX(0) +
+          row.gridPos.withY(61) +
+          row.gridPos.withW(24) +
+          row.gridPos.withH(1),
+        ] +
+        grid.wrapPanels(
+          [
+            panels.cronWorkflowTriggersTimeSeries,
+            panels.cronWorkflowConcurrencyPolicyTriggeredTimeSeries,
+          ],
+          panelWidth=12,
+          panelHeight=8,
+          startY=62
         );
 
 

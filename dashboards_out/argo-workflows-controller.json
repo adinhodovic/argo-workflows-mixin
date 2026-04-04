@@ -30,6 +30,198 @@
             "y": 0
          },
          "id": 1,
+         "title": "Summary",
+         "type": "row"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Current controller error rate across the selected controllers. Use this as the first signal for reconciliation failures.",
+         "fieldConfig": {
+            "defaults": {
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "ops"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 0,
+            "y": 1
+         },
+         "id": 2,
+         "options": {
+            "graphMode": "area",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "${datasource}"
+               },
+               "expr": "sum(\n  rate(\n    argo_workflows_error_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n    }[$__rate_interval]\n  )\n)\n"
+            }
+         ],
+         "title": "Controller Errors",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Current percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.",
+         "fieldConfig": {
+            "defaults": {
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "percent"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 6,
+            "y": 1
+         },
+         "id": 3,
+         "options": {
+            "graphMode": "area",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "${datasource}"
+               },
+               "expr": "(\n  sum(\n    rate(\n      argo_workflows_k8s_request_total{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n        status_code=~\"2..|101\"\n      }[$__rate_interval]\n    )\n  )\n  /\n  sum(\n    rate(\n      argo_workflows_k8s_request_total{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  )\n) * 100\n"
+            }
+         ],
+         "title": "K8s API Success Rate",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Current total queue depth across controller work queues for the selected controllers.",
+         "fieldConfig": {
+            "defaults": {
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 12,
+            "y": 1
+         },
+         "id": 4,
+         "options": {
+            "graphMode": "area",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "${datasource}"
+               },
+               "expr": "sum(\n  argo_workflows_queue_depth_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n  }\n)\n"
+            }
+         ],
+         "title": "Queue Depth",
+         "type": "stat"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Current number of busy workers across the selected controllers.",
+         "fieldConfig": {
+            "defaults": {
+               "mappings": [ ],
+               "thresholds": {
+                  "steps": [
+                     {
+                        "color": "green",
+                        "value": 0
+                     }
+                  ]
+               },
+               "unit": "short"
+            }
+         },
+         "gridPos": {
+            "h": 4,
+            "w": 6,
+            "x": 18,
+            "y": 1
+         },
+         "id": 5,
+         "options": {
+            "graphMode": "area",
+            "percentChangeColorMode": "standard",
+            "showPercentChange": false
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "${datasource}"
+               },
+               "expr": "sum(\n  argo_workflows_workers_busy_count{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n  }\n)\n"
+            }
+         ],
+         "title": "Busy Workers",
+         "type": "stat"
+      },
+      {
+         "collapsed": false,
+         "gridPos": {
+            "h": 1,
+            "w": 24,
+            "x": 0,
+            "y": 5
+         },
+         "id": 6,
          "title": "Errors",
          "type": "row"
       },
@@ -56,9 +248,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 1
+            "y": 6
          },
-         "id": 2,
+         "id": 7,
          "options": {
             "legend": {
                "calcs": [
@@ -88,7 +280,7 @@
                "legendFormat": "{{ cause }}"
             }
          ],
-         "title": "Error Rate by Cause",
+         "title": "Controller Errors by Cause",
          "type": "timeseries"
       },
       {
@@ -114,9 +306,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 1
+            "y": 6
          },
-         "id": 3,
+         "id": 8,
          "options": {
             "legend": {
                "calcs": [
@@ -155,9 +347,9 @@
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 9
+            "y": 14
          },
-         "id": 4,
+         "id": 9,
          "title": "Kubernetes API",
          "type": "row"
       },
@@ -184,9 +376,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 10
+            "y": 15
          },
-         "id": 5,
+         "id": 10,
          "options": {
             "legend": {
                "calcs": [
@@ -224,64 +416,6 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Rate of Kubernetes API requests by HTTP status code. Non-2xx responses indicate API server issues, RBAC problems, or resource conflicts. Watch for 429 (throttled) and 5xx responses.",
-         "fieldConfig": {
-            "defaults": {
-               "custom": {
-                  "axisSoftMin": 0,
-                  "fillOpacity": 100,
-                  "lineWidth": 1,
-                  "stacking": {
-                     "mode": "normal"
-                  }
-               },
-               "unit": "ops"
-            }
-         },
-         "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 10
-         },
-         "id": 6,
-         "options": {
-            "legend": {
-               "calcs": [
-                  "mean",
-                  "max"
-               ],
-               "displayMode": "table",
-               "placement": "right",
-               "showLegend": true,
-               "sortBy": "mean",
-               "sortDesc": true
-            },
-            "tooltip": {
-               "mode": "multi",
-               "sort": "desc"
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "sum(\n  rate(\n    argo_workflows_k8s_request_total{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n    }[$__rate_interval]\n  )\n) by (status_code)\n",
-               "legendFormat": "{{ status_code }}"
-            }
-         ],
-         "title": "K8s API Request Rate by Status Code",
-         "type": "timeseries"
-      },
-      {
-         "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-         },
          "description": "Kubernetes API request latency percentiles. Rising latency indicates API server overload or network issues. P99 spikes often precede visible degradation of workflow processing.",
          "fieldConfig": {
             "defaults": {
@@ -294,10 +428,10 @@
          "gridPos": {
             "h": 8,
             "w": 12,
-            "x": 0,
-            "y": 18
+            "x": 12,
+            "y": 15
          },
-         "id": 7,
+         "id": 11,
          "options": {
             "legend": {
                "calcs": [
@@ -349,14 +483,127 @@
          "type": "timeseries"
       },
       {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Rate of Kubernetes API requests by HTTP status code. Non-2xx responses indicate API server issues, RBAC problems, or resource conflicts. Watch for 429 (throttled) and 5xx responses.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "axisSoftMin": 0,
+                  "fillOpacity": 100,
+                  "lineWidth": 1,
+                  "stacking": {
+                     "mode": "normal"
+                  }
+               },
+               "unit": "ops"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 0,
+            "y": 23
+         },
+         "id": 12,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "sum(\n  rate(\n    argo_workflows_k8s_request_total{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n    }[$__rate_interval]\n  )\n) by (status_code)\n",
+               "legendFormat": "{{ status_code }}"
+            }
+         ],
+         "title": "K8s API Request Rate by Status Code",
+         "type": "timeseries"
+      },
+      {
+         "datasource": {
+            "type": "prometheus",
+            "uid": "$datasource"
+         },
+         "description": "Percentage of Kubernetes API requests succeeding. Drops here usually indicate API server issues, throttling, conflicts, or RBAC problems.",
+         "fieldConfig": {
+            "defaults": {
+               "custom": {
+                  "axisSoftMax": 100,
+                  "axisSoftMin": 0,
+                  "fillOpacity": 10
+               },
+               "unit": "percent"
+            }
+         },
+         "gridPos": {
+            "h": 8,
+            "w": 12,
+            "x": 12,
+            "y": 23
+         },
+         "id": 13,
+         "options": {
+            "legend": {
+               "calcs": [
+                  "mean",
+                  "max"
+               ],
+               "displayMode": "table",
+               "placement": "right",
+               "showLegend": true,
+               "sortBy": "mean",
+               "sortDesc": true
+            },
+            "tooltip": {
+               "mode": "multi",
+               "sort": "desc"
+            }
+         },
+         "pluginVersion": "v11.4.0",
+         "targets": [
+            {
+               "datasource": {
+                  "type": "prometheus",
+                  "uid": "$datasource"
+               },
+               "exemplar": false,
+               "expr": "(\n  sum(\n    rate(\n      argo_workflows_k8s_request_total{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n        status_code=~\"2..|101\"\n      }[$__rate_interval]\n    )\n  )\n  /\n  sum(\n    rate(\n      argo_workflows_k8s_request_total{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  )\n) * 100\n",
+               "legendFormat": "Success Rate"
+            }
+         ],
+         "title": "K8s API Success Rate",
+         "type": "timeseries"
+      },
+      {
          "collapsed": false,
          "gridPos": {
             "h": 1,
             "w": 24,
             "x": 0,
-            "y": 26
+            "y": 31
          },
-         "id": 8,
+         "id": 14,
          "title": "Work Queues",
          "type": "row"
       },
@@ -383,9 +630,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 27
+            "y": 32
          },
-         "id": 9,
+         "id": 15,
          "options": {
             "legend": {
                "calcs": [
@@ -441,9 +688,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 27
+            "y": 32
          },
-         "id": 10,
+         "id": 16,
          "options": {
             "legend": {
                "calcs": [
@@ -473,7 +720,7 @@
                "legendFormat": "{{ queue_name }}"
             }
          ],
-         "title": "Queue Additions Rate",
+         "title": "Queue Additions",
          "type": "timeseries"
       },
       {
@@ -494,9 +741,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 35
+            "y": 40
          },
-         "id": 11,
+         "id": 17,
          "options": {
             "legend": {
                "calcs": [
@@ -556,9 +803,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 35
+            "y": 40
          },
-         "id": 12,
+         "id": 18,
          "options": {
             "legend": {
                "calcs": [
@@ -623,9 +870,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 43
+            "y": 48
          },
-         "id": 13,
+         "id": 19,
          "options": {
             "legend": {
                "calcs": [
@@ -655,7 +902,7 @@
                "legendFormat": "{{ queue_name }}"
             }
          ],
-         "title": "Queue Retries Rate",
+         "title": "Queue Retries",
          "type": "timeseries"
       },
       {
@@ -676,9 +923,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 43
+            "y": 48
          },
-         "id": 14,
+         "id": 20,
          "options": {
             "legend": {
                "calcs": [
@@ -734,9 +981,9 @@
             "h": 8,
             "w": 12,
             "x": 0,
-            "y": 51
+            "y": 56
          },
-         "id": 15,
+         "id": 21,
          "options": {
             "legend": {
                "calcs": [
@@ -792,9 +1039,9 @@
             "h": 8,
             "w": 12,
             "x": 12,
-            "y": 51
+            "y": 56
          },
-         "id": 16,
+         "id": 22,
          "options": {
             "legend": {
                "calcs": [
@@ -825,226 +1072,6 @@
             }
          ],
          "title": "Busy Workers",
-         "type": "timeseries"
-      },
-      {
-         "collapsed": false,
-         "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 59
-         },
-         "id": 17,
-         "title": "Rate Limiting",
-         "type": "row"
-      },
-      {
-         "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-         },
-         "description": "Time spent waiting for client-side and resource rate limiters. High values indicate the controller is being throttled to protect the Kubernetes API server. May slow workflow processing.",
-         "fieldConfig": {
-            "defaults": {
-               "custom": {
-                  "fillOpacity": 10
-               },
-               "unit": "s"
-            }
-         },
-         "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 60
-         },
-         "id": 18,
-         "options": {
-            "legend": {
-               "calcs": [
-                  "mean",
-                  "max"
-               ],
-               "displayMode": "table",
-               "placement": "right",
-               "showLegend": true,
-               "sortBy": "mean",
-               "sortDesc": true
-            },
-            "tooltip": {
-               "mode": "multi",
-               "sort": "desc"
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "histogram_quantile(\n  0.5,\n  sum(\n    rate(\n      argo_workflows_client_rate_limiter_latency_bucket{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  ) by (le)\n)\n",
-               "legendFormat": "Client P50"
-            },
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "histogram_quantile(\n  0.95,\n  sum(\n    rate(\n      argo_workflows_client_rate_limiter_latency_bucket{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  ) by (le)\n)\n",
-               "legendFormat": "Client P95"
-            },
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "histogram_quantile(\n  0.5,\n  sum(\n    rate(\n      argo_workflows_resource_rate_limiter_latency_bucket{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  ) by (le)\n)\n",
-               "legendFormat": "Resource P50"
-            },
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "histogram_quantile(\n  0.95,\n  sum(\n    rate(\n      argo_workflows_resource_rate_limiter_latency_bucket{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n      }[$__rate_interval]\n    )\n  ) by (le)\n)\n",
-               "legendFormat": "Resource P95"
-            }
-         ],
-         "title": "Rate Limiter Latency",
-         "type": "timeseries"
-      },
-      {
-         "collapsed": false,
-         "gridPos": {
-            "h": 1,
-            "w": 24,
-            "x": 0,
-            "y": 68
-         },
-         "id": 19,
-         "title": "CronWorkflows",
-         "type": "row"
-      },
-      {
-         "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-         },
-         "description": "Rate of CronWorkflow triggers by name and namespace. Use to verify scheduled workflows are firing as expected. Missing triggers indicate scheduling issues.",
-         "fieldConfig": {
-            "defaults": {
-               "custom": {
-                  "axisSoftMin": 0,
-                  "fillOpacity": 100,
-                  "lineWidth": 1,
-                  "stacking": {
-                     "mode": "normal"
-                  }
-               },
-               "unit": "ops"
-            }
-         },
-         "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 0,
-            "y": 69
-         },
-         "id": 20,
-         "options": {
-            "legend": {
-               "calcs": [
-                  "mean",
-                  "max"
-               ],
-               "displayMode": "table",
-               "placement": "right",
-               "showLegend": true,
-               "sortBy": "mean",
-               "sortDesc": true
-            },
-            "tooltip": {
-               "mode": "multi",
-               "sort": "desc"
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "sum(\n  rate(\n    argo_workflows_cronworkflows_triggered_total{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n    }[$__rate_interval]\n  )\n) by (name, namespace)\n",
-               "legendFormat": "{{ namespace }}/{{ name }}"
-            }
-         ],
-         "title": "CronWorkflow Trigger Rate",
-         "type": "timeseries"
-      },
-      {
-         "datasource": {
-            "type": "prometheus",
-            "uid": "$datasource"
-         },
-         "description": "Rate of deprecated feature usage. These features may be removed in future versions. Plan migration to supported alternatives.",
-         "fieldConfig": {
-            "defaults": {
-               "custom": {
-                  "axisSoftMin": 0,
-                  "fillOpacity": 100,
-                  "lineWidth": 1,
-                  "stacking": {
-                     "mode": "normal"
-                  }
-               },
-               "unit": "ops"
-            }
-         },
-         "gridPos": {
-            "h": 8,
-            "w": 12,
-            "x": 12,
-            "y": 69
-         },
-         "id": 21,
-         "options": {
-            "legend": {
-               "calcs": [
-                  "mean",
-                  "max"
-               ],
-               "displayMode": "table",
-               "placement": "right",
-               "showLegend": true,
-               "sortBy": "mean",
-               "sortDesc": true
-            },
-            "tooltip": {
-               "mode": "multi",
-               "sort": "desc"
-            }
-         },
-         "pluginVersion": "v11.4.0",
-         "targets": [
-            {
-               "datasource": {
-                  "type": "prometheus",
-                  "uid": "$datasource"
-               },
-               "exemplar": false,
-               "expr": "sum(\n  rate(\n    argo_workflows_deprecated_feature{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n\n    }[$__rate_interval]\n  )\n) by (feature)\n",
-               "legendFormat": "{{ feature }}"
-            }
-         ],
-         "title": "Deprecated Feature Usage",
          "type": "timeseries"
       }
    ],

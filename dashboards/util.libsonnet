@@ -12,6 +12,7 @@ local query = variable.query;
     cluster: '%(clusterLabel)s="$cluster"' % config,
     namespace: 'namespace=~"$namespace"',
     job: 'job=~"$job"',
+    instanceFilter: 'instance=~"$instance"',
 
     base: |||
       %(cluster)s,
@@ -21,6 +22,11 @@ local query = variable.query;
 
     default: |||
       %(base)s
+    ||| % this,
+
+    instance: |||
+      %(default)s,
+      %(instanceFilter)s
     ||| % this,
   },
 
@@ -81,6 +87,19 @@ local query = variable.query;
       query.withSort() +
       query.generalOptions.withLabel('Job') +
       query.selectionOptions.withMulti(true) +
+      query.selectionOptions.withIncludeAll(true) +
+      query.refresh.onLoad() +
+      query.refresh.onTime(),
+
+    instance:
+      query.new(
+        'instance',
+        'label_values(argo_workflows_error_count{%(cluster)s, %(namespace)s, %(job)s}, instance)' % defaultFilters
+      ) +
+      query.withDatasourceFromVariable(this.datasource) +
+      query.withSort() +
+      query.generalOptions.withLabel('Instance') +
+      query.selectionOptions.withMulti(false) +
       query.selectionOptions.withIncludeAll(true) +
       query.refresh.onLoad() +
       query.refresh.onTime(),

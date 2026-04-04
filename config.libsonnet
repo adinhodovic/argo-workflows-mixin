@@ -42,12 +42,6 @@
         threshold: '5',  // number of pending workflows
       },
 
-      controllerNotLeader: {
-        enabled: true,
-        severity: 'critical',
-        interval: '5m',
-      },
-
       controllerHighErrorRate: {
         enabled: true,
         severity: 'warning',
@@ -62,12 +56,6 @@
         threshold: '100',  // queue depth
       },
 
-      podPendingHigh: {
-        enabled: true,
-        severity: 'warning',
-        interval: '15m',
-        threshold: '10',  // number of pending pods
-      },
     },
 
     // Custom annotations to display in graphs
