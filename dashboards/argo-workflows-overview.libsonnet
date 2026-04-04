@@ -59,7 +59,7 @@ local tbOverride = tbStandardOptions.override;
       ];
 
       local defaultFilters = util.filters($._config);
-      local workflowBaseFilters = defaultFilters + {
+      local workflowBaseFilters = defaultFilters {
         workflowNamespace: workflowNamespaceSelector,
         base: |||
           %(cluster)s,
@@ -73,7 +73,7 @@ local tbOverride = tbStandardOptions.override;
           job: defaultFilters.job,
         },
       };
-      local workflowFilters = workflowBaseFilters + {
+      local workflowFilters = workflowBaseFilters {
         default: workflowBaseFilters.base,
       };
       local queries = {
