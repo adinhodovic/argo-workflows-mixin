@@ -196,7 +196,8 @@ local tbOverride = tbStandardOptions.override;
           sum(
             increase(
               argo_workflows_total_count{
-                %(default)s
+                %(default)s,
+                phase=~'Succeeded|Failed|Error'
               }[6h]
             )
           ) by (phase)
@@ -207,7 +208,8 @@ local tbOverride = tbStandardOptions.override;
             sum(
               increase(
                 argo_workflows_total_count{
-                  %(default)s
+                  %(default)s,
+                  phase=~'Succeeded|Failed|Error'
                 }[6h]
               )
             ) by (exported_namespace)
@@ -254,8 +256,30 @@ local tbOverride = tbStandardOptions.override;
           sum(
             increase(
               argo_workflows_total_count{
-                %(default)s
+                %(default)s,
+                phase=~'Succeeded|Failed|Error'
               }[6h]
+            )
+          )
+          * 100
+        ||| % workflowFilters,
+
+        workflowSuccessRate: |||
+          sum(
+            increase(
+              argo_workflows_total_count{
+                %(default)s,
+                phase='Succeeded'
+              }[$__rate_interval]
+            )
+          )
+          /
+          sum(
+            increase(
+              argo_workflows_total_count{
+                %(default)s,
+                phase=~'Succeeded|Failed|Error'
+              }[$__rate_interval]
             )
           )
           * 100
@@ -341,7 +365,8 @@ local tbOverride = tbStandardOptions.override;
             sum(
               increase(
                 argo_workflows_total_count{
-                  %(default)s
+                  %(default)s,
+                  phase=~'Succeeded|Failed|Error'
                 }[6h]
               )
             ) by (exported_namespace)
@@ -388,7 +413,30 @@ local tbOverride = tbStandardOptions.override;
                 phase="Error"
               }[6h]
             )
-          ) by (exported_namespace)
+            ) by (exported_namespace)
+            %(rpsTop40k)s
+        ||| % (workflowFilters + namespaceRpsTop40k),
+
+        successRateByNamespace6h: |||
+          (
+            sum(
+              increase(
+                argo_workflows_total_count{
+                  %(default)s,
+                  phase='Succeeded'
+                }[6h]
+              )
+            ) by (exported_namespace)
+            /
+            sum(
+              increase(
+                argo_workflows_total_count{
+                  %(default)s,
+                  phase=~'Succeeded|Failed|Error'
+                }[6h]
+              )
+            ) by (exported_namespace)
+          ) * 100
           %(rpsTop40k)s
         ||| % (workflowFilters + namespaceRpsTop40k),
       };
@@ -555,21 +603,20 @@ local tbOverride = tbStandardOptions.override;
             'short',
             queries.workflowCompletionsByPhase,
             '{{ phase }}',
-            description='Workflows reaching each phase within each interval. This shows throughput and where recent workflow outcomes are landing.',
-            stack='normal',
+            description='Workflows reaching each terminal phase within each interval. This shows throughput and where recent workflow outcomes are landing.',
           ),
 
         workflowSuccessRateTimeSeries:
           mixinUtils.dashboards.timeSeriesPanel(
-            'Workflow Success Rate [6h]',
+            'Workflow Success Rate',
             'percent',
             [
               {
-                expr: queries.workflowSuccessRate6h,
-                legend: 'Success Rate [6h]',
+                expr: queries.workflowSuccessRate,
+                legend: 'Success Rate',
               },
             ],
-            description='Percentage of workflows completing successfully over the past 6 hours. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.',
+            description='Percentage of workflows completing successfully over each dashboard rate interval. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.',
             min=0,
             max=100,
           ),
@@ -679,16 +726,7 @@ local tbOverride = tbStandardOptions.override;
                 legend: 'Errors',
               },
               {
-                expr: |||
-                  (
-                    %(succeeded)s
-                    /
-                    %(total)s
-                  ) * 100
-                ||| % {
-                  succeeded: queries.succeededWorkflowsByNamespace6h,
-                  total: queries.workflowCompletionsByNamespace6hForTable,
-                },
+                expr: queries.successRateByNamespace6h,
                 legend: 'Success Rate',
               },
             ],
@@ -788,7 +826,7 @@ local tbOverride = tbStandardOptions.override;
           startY=5
         ) +
         [
-          row.new('Workflows') +
+          row.new('Workflows in $workflow_namespace Namespace') +
           row.gridPos.withX(0) +
           row.gridPos.withY(11) +
           row.gridPos.withW(24) +
@@ -798,7 +836,7 @@ local tbOverride = tbStandardOptions.override;
           [
             panels.workflowOverviewTable +
             tablePanel.gridPos.withW(24) +
-            tablePanel.gridPos.withH(10),
+            tablePanel.gridPos.withH(12),
             panels.workflowGaugeByPhaseTimeSeries,
             panels.workflowCompletionsByPhaseTimeSeries,
             panels.workflowSuccessRateTimeSeries,
