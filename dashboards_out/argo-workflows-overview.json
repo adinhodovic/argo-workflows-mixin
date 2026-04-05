@@ -51,7 +51,8 @@
                   ]
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -70,9 +71,10 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
-               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=~\"Pending|Running\"\n  }\n)\n"
+               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=~\"Pending|Running\"\n  }\n)\n",
+               "instant": false
             }
          ],
          "title": "Active Workflows",
@@ -96,7 +98,8 @@
                   ]
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -115,9 +118,10 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
-               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=~\"Error|Failed\"\n  }\n)\n"
+               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=~\"Error|Failed\"\n  }\n)\n",
+               "instant": false
             }
          ],
          "title": "Unhealthy Workflows",
@@ -141,7 +145,8 @@
                   ]
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -160,7 +165,7 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
                "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=~\"Succeeded|Failed|Error\"\n    }[6h]\n  )\n)\n",
                "instant": true
@@ -187,7 +192,8 @@
                   ]
                },
                "unit": "percent"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -206,9 +212,9 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n)\n/\nsum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n    }[6h]\n  )\n)\n* 100\n",
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n)\n/\nsum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=~'Succeeded|Failed|Error'\n    }[6h]\n  )\n)\n* 100\n",
                "instant": true
             }
          ],
@@ -233,7 +239,8 @@
                   ]
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -252,9 +259,10 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
-               "expr": "sum(\n  argo_workflows_pods_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=\"Running\"\n  }\n)\n"
+               "expr": "sum(\n  argo_workflows_pods_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=\"Running\"\n  }\n)\n",
+               "instant": false
             }
          ],
          "title": "Running Pods",
@@ -278,7 +286,8 @@
                   ]
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 4,
@@ -297,9 +306,10 @@
             {
                "datasource": {
                   "type": "prometheus",
-                  "uid": "${datasource}"
+                  "uid": "$datasource"
                },
-               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=\"Pending\"\n  }\n)\n"
+               "expr": "sum(\n  argo_workflows_gauge{\n    cluster=\"$cluster\",\nnamespace=~\"$namespace\",\njob=~\"$job\"\n\n,\n    phase=\"Pending\"\n  }\n)\n",
+               "instant": false
             }
          ],
          "title": "Pending Workflows",
@@ -399,7 +409,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n    }[6h]\n  )\n) by (phase)\n",
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=~'Succeeded|Failed|Error'\n    }[6h]\n  )\n) by (phase)\n",
                "instant": true,
                "legendFormat": "{{ phase }}"
             }
@@ -518,7 +528,7 @@
             "y": 11
          },
          "id": 12,
-         "title": "Workflows",
+         "title": "Workflows in $workflow_namespace Namespace",
          "type": "row"
       },
       {
@@ -529,6 +539,7 @@
          "description": "Workflow completions by workflow namespace over the past 6 hours, including succeeded, failed, error, and derived success rate.",
          "fieldConfig": {
             "defaults": {
+               "links": [ ],
                "thresholds": {
                   "steps": [ ]
                },
@@ -618,7 +629,7 @@
             ]
          },
          "gridPos": {
-            "h": 10,
+            "h": 12,
             "w": 24,
             "x": 0,
             "y": 12
@@ -642,7 +653,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n",
+               "expr": "topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n",
                "format": "table",
                "instant": true
             },
@@ -651,7 +662,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
                "format": "table",
                "instant": true
             },
@@ -660,7 +671,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Failed\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Failed\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
                "format": "table",
                "instant": true
             },
@@ -669,7 +680,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Error\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Error\"\n    }[6h]\n  )\n  ) by (exported_namespace)\n  and on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
                "format": "table",
                "instant": true
             },
@@ -678,7 +689,7 @@
                   "type": "prometheus",
                   "uid": "$datasource"
                },
-               "expr": "(\n  sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n) by (exported_namespace)\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n\n  /\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n) * 100\n",
+               "expr": "(\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase='Succeeded'\n      }[6h]\n    )\n  ) by (exported_namespace)\n  /\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n) * 100\nand on (exported_namespace) (\n  topk(40,\n  sum(\n    increase(\n      argo_workflows_total_count{\n        cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n        phase=~'Succeeded|Failed|Error'\n      }[6h]\n    )\n  ) by (exported_namespace)\n)\n\n)\n\n",
                "format": "table",
                "instant": true
             }
@@ -732,7 +743,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -750,7 +762,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -778,19 +790,15 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Workflows reaching each phase within each interval. This shows throughput and where recent workflow outcomes are landing.",
+         "description": "Workflows reaching each terminal phase within each interval. This shows throughput and where recent workflow outcomes are landing.",
          "fieldConfig": {
             "defaults": {
                "custom": {
-                  "axisSoftMin": 0,
-                  "fillOpacity": 100,
-                  "lineWidth": 1,
-                  "stacking": {
-                     "mode": "normal"
-                  }
+                  "fillOpacity": 10
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -808,7 +816,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -836,7 +844,7 @@
             "type": "prometheus",
             "uid": "$datasource"
          },
-         "description": "Percentage of workflows completing successfully over the past 6 hours. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.",
+         "description": "Percentage of workflows completing successfully over each dashboard rate interval. Drops below expected levels indicate workflow logic errors, infrastructure issues, or resource constraints.",
          "fieldConfig": {
             "defaults": {
                "custom": {
@@ -845,7 +853,8 @@
                   "fillOpacity": 10
                },
                "unit": "percent"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -863,7 +872,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -879,11 +888,11 @@
                   "uid": "$datasource"
                },
                "exemplar": false,
-               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=\"Succeeded\"\n    }[6h]\n  )\n)\n/\nsum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n\n    }[6h]\n  )\n)\n* 100\n",
-               "legendFormat": "Success Rate [6h]"
+               "expr": "sum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase='Succeeded'\n    }[$__rate_interval]\n  )\n)\n/\nsum(\n  increase(\n    argo_workflows_total_count{\n      cluster=\"$cluster\",\nnamespace=~\"$namespace\",\nexported_namespace=~\"$workflow_namespace\",\njob=~\"$job\"\n,\n      phase=~'Succeeded|Failed|Error'\n    }[$__rate_interval]\n  )\n)\n* 100\n",
+               "legendFormat": "Success Rate"
             }
          ],
-         "title": "Workflow Success Rate [6h]",
+         "title": "Workflow Success Rate",
          "type": "timeseries"
       },
       {
@@ -898,7 +907,8 @@
                   "fillOpacity": 10
                },
                "unit": "s"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -916,7 +926,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -986,7 +996,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1004,7 +1015,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -1044,7 +1055,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1062,7 +1074,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -1102,7 +1114,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1120,7 +1133,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -1160,7 +1173,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1178,7 +1192,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -1230,7 +1244,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1248,7 +1263,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
@@ -1288,7 +1303,8 @@
                   }
                },
                "unit": "short"
-            }
+            },
+            "overrides": [ ]
          },
          "gridPos": {
             "h": 8,
@@ -1306,7 +1322,7 @@
                "displayMode": "table",
                "placement": "right",
                "showLegend": true,
-               "sortBy": "mean",
+               "sortBy": "Mean",
                "sortDesc": true
             },
             "tooltip": {
